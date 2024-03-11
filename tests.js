@@ -16,16 +16,6 @@ var assert_equality = (received, expected, test) => {
 }
 
 ((descr = "dependency depth") => {
-
-    var firstname = trax('Sam');
-    var lastname = trax('Hill');
-    var age = trax(42);
-    var person = trax(firstname, lastname, age).fct((f,l,a) => { return { name: f + ' ' + l, age : a }; });
-    console.log(person());
-})();
-
-
-((descr = "dependency depth") => {
     log(descr);
     var a = trax(3);
     var b = trax(a);
@@ -38,17 +28,20 @@ var assert_equality = (received, expected, test) => {
 
 })();
 
-
 ((descr = "multi dependency") => {
     log(descr);
-    var a = trax(3);
-    var b = trax(4);
-    var c = trax(a,b).fct((x,y) => x - y);
+    var a = trax(3).id('a');
+    var b = trax(4).id('b');
+    var c = trax(a,b).id('c').fct((x,y) => x - y);
+    var d = trax(c).id('d');
 
     assert_equality(c() , -1,  descr + " (1)");
 
     c(b,a);
     assert_equality(c() , 1,  descr + " (2)");
+
+    c(10,a);
+    assert_equality(c() , 7,  descr + " (3)");
 
 })();
 
@@ -80,12 +73,14 @@ var assert_equality = (received, expected, test) => {
     var b = trax(a);
     var c = trax(b).onChange((x) => { closure = x; }) ;
 
-    a.fire(); // need to trigger at least once to activate c(). Could also call c() or reset a(3);
+                        // onChange will not execute until there is a change in the publisher tree
+    assert_equality(closure , undefined,  descr + " (1)");
 
-    assert_equality(closure , 3,  descr + " (1)");
+    a.fire();           // the fire trigger behaves like an update and will propagate up the subscriber tree
+    assert_equality(closure , 3,  descr + " (2)");
 
-    a(4);
-    assert_equality(closure , 4,  descr + " (2)");
+    a(4);               // change the value of 'a' -> update will propagate up the subscriber tree
+    assert_equality(closure , 4,  descr + " (3)");
 })();
 
 ((descr = "event count") => {
@@ -95,11 +90,12 @@ var assert_equality = (received, expected, test) => {
                                             // ignore x, increment current value by inc. 
     var c = trax(a,b).fct((x,inc,current) => { return (current || 0) + inc; }).onChange(true);
 
+                        // the dependency fct of 'c' will be executed when onChange is set
     assert_equality(c() , 1,  descr + " (1)");
-    a.fire();
+    a.fire();           // propagate the trigger up the subscriber tree
     assert_equality(c() , 2,  descr + " (2)");
     assert_equality(c() , 2,  descr + " (3)");
-    b(3);               // will fire and increment by 3 -> 5
+    b(3);               // publisher update -> will fire and increment by 3 -> 5
     a.fire();           // should now increment by 3 -> 8
     a.fire();           // should now increment by 3 -> 11
     assert_equality(c() , 11,  descr + " (4)");
@@ -115,30 +111,30 @@ var assert_equality = (received, expected, test) => {
 
     assert_equality(c(), 3, descr + " (1)");
 
-    a(11);
+    a(11);              // 11 is not less than 10 (-> trax.SUPPRESSED), so subscribers of 'b' will not be updated
     assert_equality(c(), 3, descr + " (2)");
 
-    a(9);
+    a(9);               // 9 is less than 10 and subscribers of 'b' will be updated
     assert_equality(c(), 9, descr + " (3)");
 })();
 
 ((descr = "active filter") => {
     log(descr);
-    var closure;
-    var a = trax(3);
+    var closure;        // closure will be used to snag the current value as seen by the onChange function
+    var a = trax();
     var b = trax(a).fct((x) => {
         return (x < 10) ? x : trax.SUPPRESSED; // when x >= 10 changes will be suppressed and dependent elements won't notice any changes
     });
-    var c = trax(b).onChange((x) => { closure = x; });
+    var c = trax(b).onChange((x) => { closure = x; });  // when a change is seen by 'c' the onChange function will be called. Snag the current value.
 
-    c(); // need to trigger at least once to activate c(). Could also call a.fire() or reset a(3);
-
+    a(3);
     assert_equality(closure, 3, descr + " (1)");
 
-    a(11);
-    assert_equality(closure, 3, descr + " (2)"); // still 3 !
+    closure = 999;      // set closure to some silly value
+    a(11);              // this change will be hidden by 'b' and not seen by 'c'
+    assert_equality(closure, 999, descr + " (2)"); // onChange was not called and closure is unchanged at 999
 
-    a(9);
+    a(9);               // this change is not filtered by 'b' and change notification will make it to 'c' triggering c.onChange()
     assert_equality(closure, 9, descr + " (3)"); // now updates to 9
 })();
 
@@ -160,6 +156,109 @@ var assert_equality = (received, expected, test) => {
     assert_equality(closure[3], 'Update to a: undefined => 15', descr + " (2.1)");
     assert_equality(closure[4], 'Update to b: 3 => 15', descr + " (2.2)");
     assert_equality(closure[5], 'Update to c: 3 => 15', descr + " (2.3)");
+})();
+
+((descr = "inspect pubs and subs") => {
+    log(descr);
+    var a = trax(3).id('a');
+    var b1 = trax(a).id('b1');
+    var b2 = trax(a).id('b2');
+    var c = trax(b1,b2).id('c').fct((x,y) => x + y);
+    var d1 = trax(c).id('d1');
+    var d2 = trax(c).id('d2');
+
+    assert_equality(d1(), 6, descr + " (1)");
+
+    var expectedPubsForC = 
+    `
+    {
+      "value": "6",
+      "id": "c",
+      "phase": "Symbol(cached)",
+      "<--": [
+        {
+          "value": "3",
+          "id": "b1",
+          "phase": "Symbol(cached)",
+          "<--": [
+            {
+              "value": "3",
+              "id": "a",
+              "phase": "Symbol(cached)",
+              "<--": [
+                3
+              ]
+            }
+          ]
+        },
+        {
+          "value": "3",
+          "id": "b2",
+          "phase": "Symbol(cached)",
+          "<--": [
+            {
+              "value": "3",
+              "id": "a",
+              "phase": "Symbol(cached)",
+              "<--": [
+                3
+              ]
+            }
+          ]
+        }
+      ]
+    }
+    `
+
+    assert_equality(c.pubs(), expectedPubsForC.replaceAll(/\s/g, ''), descr + " (2)")
+
+    var expectedImmediatePubsForC = 
+    `
+    {
+      "value": "6",
+      "id": "c",
+      "phase": "Symbol(cached)",
+      "<--": [
+        {
+          "value": "3",
+          "id": "b1",
+          "phase": "Symbol(cached)",
+          "<--": []
+        },
+        {
+          "value": "3",
+          "id": "b2",
+          "phase": "Symbol(cached)",
+          "<--": []
+        }
+      ]
+    }
+    `
+    assert_equality(c.pubs(1), expectedImmediatePubsForC.replaceAll(/\s/g, ''), descr + " (3)"); // only 1 level down
+
+    var expectedSubsOfC = 
+    `
+    {
+      "value": "6",
+      "id": "c",
+      "phase": "Symbol(cached)",
+      "-->": [
+        {
+          "value": "6",
+          "id": "d1",
+          "phase": "Symbol(cached)",
+          "-->": []
+        },
+        {
+          "value": "undefined",
+          "id": "d2",
+          "phase": "Symbol(unknown)",
+          "-->": []
+        }
+      ]
+    }
+    `
+    assert_equality(c.subs(), expectedSubsOfC.replaceAll(/\s/g, ''), descr + " (4)")
 })();
 
 

@@ -34,11 +34,24 @@ b.onChange((x) -> { console.log(x); });
 // 'a has changed' will be output to the console when a() is updated
 a('a has changed');
 
+// create a new trax without value and without dependency
+var c = trax();
+
+// make c dependent on 'b' (and transitively 'a')
+c(b);
+console.log(c()); // -> current value of 'a' is 'a has changed', this propagates to 'b' and to 'c' 
+
 // Children can depend on multiple parents and merge their values into a single value
 var firstname = trax('Sam');
 var lastname = trax('Hill');
 var age = trax(42);
-var person = trax(firstname, lastname, age).fct((f,l,a) => { return { name: f + ' ' + l, age : a }; });
+var person = trax(firstname, lastname, age).fct(
+    (f,l,a) => { 
+        return { 
+            name: f + ' ' + l, 
+            age : a 
+        }; 
+    });
 console.log(person());
 
 // Use instanceof to check for Trax elements
