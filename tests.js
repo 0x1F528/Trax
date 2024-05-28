@@ -47,10 +47,10 @@ var assert_equality = (received, expected, test) => {
 
 ((descr = "fan out") => {
     log(descr);
-    var a = trax(3);
-    var b = trax(a);
-    var c = trax(a);
-    var d = trax(a);
+    var a = trax(3).id('a');
+    var b = trax(a).id('b');
+    var c = trax(a).id('c');
+    var d = trax(a).id('d');
 
     assert_equality(a() , 3,  descr + " (1)");
     assert_equality(b() , 3,  descr + " (2)");
@@ -66,12 +66,26 @@ var assert_equality = (received, expected, test) => {
 
 })();
 
+((descr = "active update async") => {
+    log(descr);
+    Trax.onChange(Trax.MODE.ASYNC);
+
+    var a = trax(3).id('a');
+    var b = trax(a).id('b');
+    var c = trax(b).id('c').onChange((x) => { assert_equality(x , 4,  descr + " (1)") }) ; // 4 is the correct value as it is the last value set and the one that will be visible when onChange triggers
+
+    a(12);              // change the value of 'a' -> update will propagate up the subscriber tree but onChange will not (yet) be called
+    a(4);               // change the value of 'a' -> update will propagate up the subscriber tree but won't be called until this test script completes.
+
+    Trax.onChange(Trax.MODE.SYNC);
+})();
+
 ((descr = "active update") => {
     log(descr);
     var closure;
-    var a = trax(3);
-    var b = trax(a);
-    var c = trax(b).onChange((x) => { closure = x; }) ;
+    var a = trax(3).id('a');
+    var b = trax(a).id('b');
+    var c = trax(b).id('c').onChange((x) => { closure = x }) ;
 
                         // onChange will not execute until there is a change in the publisher tree
     assert_equality(closure , undefined,  descr + " (1)");
@@ -85,10 +99,10 @@ var assert_equality = (received, expected, test) => {
 
 ((descr = "event count") => {
     log(descr);
-    var a = trax(1);
-    var b = trax(1);
+    var a = trax(1).id('a');
+    var b = trax(1).id('b');
                                             // ignore x, increment current value by inc. 
-    var c = trax(a,b).fct((x,inc,current) => { return (current || 0) + inc; }).onChange(true);
+    var c = trax(a,b).id('c').fct((x,inc,current) => { return (current || 0) + inc; }).onChange(true);
 
                         // the dependency fct of 'c' will be executed when onChange is set
     assert_equality(c() , 1,  descr + " (1)");
@@ -103,15 +117,15 @@ var assert_equality = (received, expected, test) => {
 
 ((descr = "filter") => {
     log(descr);
-    var a = trax(3);
-    var b = trax(a).fct((x) => {
-        return (x < 10) ? x : trax.SUPPRESSED;
+    var a = trax(3).id('a');
+    var b = trax(a).id('b').fct((x) => {
+        return (x < 10) ? x : Trax.HALT;
     });
-    var c = trax(b);
+    var c = trax(b).id('c');
 
     assert_equality(c(), 3, descr + " (1)");
 
-    a(11);              // 11 is not less than 10 (-> trax.SUPPRESSED), so subscribers of 'b' will not be updated
+    a(11);              // 11 is not less than 10 (-> Trax.HALT), so subscribers of 'b' will not be updated
     assert_equality(c(), 3, descr + " (2)");
 
     a(9);               // 9 is less than 10 and subscribers of 'b' will be updated
@@ -121,11 +135,11 @@ var assert_equality = (received, expected, test) => {
 ((descr = "active filter") => {
     log(descr);
     var closure;        // closure will be used to snag the current value as seen by the onChange function
-    var a = trax();
-    var b = trax(a).fct((x) => {
-        return (x < 10) ? x : trax.SUPPRESSED; // when x >= 10 changes will be suppressed and dependent elements won't notice any changes
+    var a = trax().id('a');
+    var b = trax(a).id('b').fct((x) => {
+        return (x < 10) ? x : Trax.HALT; // when x >= 10 changes will be suppressed/halted and dependent elements won't notice any changes
     });
-    var c = trax(b).onChange((x) => { closure = x; });  // when a change is seen by 'c' the onChange function will be called. Snag the current value.
+    var c = trax(b).id('c').onChange((x) => { closure = x; });  // when a change is seen by 'c' the onChange function will be called. Snag the current value.
 
     a(3);
     assert_equality(closure, 3, descr + " (1)");
@@ -136,6 +150,36 @@ var assert_equality = (received, expected, test) => {
 
     a(9);               // this change is not filtered by 'b' and change notification will make it to 'c' triggering c.onChange()
     assert_equality(closure, 9, descr + " (3)"); // now updates to 9
+})();
+
+((descr = "event signal") => {
+  log(descr);
+  var changeClosure, eventClosure;
+  var FOO = Symbol('foo');
+  var a = trax(3).id('a');
+  var b = trax(a).id('b');
+  var c = trax(b).id('c').onChange((x) => { changeClosure = x; }).handler(FOO, (val, t, arg) => { eventClosure = [val, arg]});
+
+  a.fire();
+  assert_equality(changeClosure, 3, descr + " (1)");
+  a.fire(FOO, 'baz')  
+  assert_equality(eventClosure[0] , 3, descr + " (2)");
+  assert_equality(eventClosure[1] , 'baz', descr + " (3)");
+})();
+
+((descr = "event signal with modification") => {
+  log(descr);
+  var changeClosure, eventClosure;
+  var APPEND = Symbol('append');
+  var a = trax('pot').id('a').handler(APPEND, (val, t, arg) => { t(val + arg); return Trax.HALT; })
+  var b = trax(a).id('b');
+  var c = trax(b).id('c').onChange((x) => { changeClosure = x; }).handler(APPEND, (val, t, arg) => { eventClosure = [val, arg]});;
+
+  a.fire();
+  assert_equality(changeClosure, 'pot', descr + " (1)");
+  a.fire(APPEND, 'ato')  
+  assert_equality(changeClosure, 'potato', descr + " (2)");
+  assert_equality(eventClosure, undefined, descr + " (3)");
 })();
 
 ((descr = "logging") => {
@@ -252,13 +296,200 @@ var assert_equality = (received, expected, test) => {
         {
           "value": "undefined",
           "id": "d2",
-          "phase": "Symbol(unknown)",
+          "phase": "Symbol(invalidated)",
           "-->": []
         }
       ]
     }
     `
     assert_equality(c.subs(), expectedSubsOfC.replaceAll(/\s/g, ''), descr + " (4)")
+})();
+
+
+((descr = "prune") => {
+  log(descr);
+  /*
+                L1_a          L1_b
+                  |            |
+                L2_a          L2_b
+                     \      /      \
+                      L3_ab          L3_c
+                     /      \
+                L4_a          L4_b
+                  |            |
+              > L5_a <         |
+                  |            |
+                L6_a          /
+                  |  \       /
+                L7_a   L7_ab
+                         |
+                       L8_ab
+  */
+  var L1_a = trax(3).id('L1_a');
+  var L1_b = trax(3).id('L1_b');
+  var L2_a = trax(L1_a).id('L2_a');
+  var L2_b = trax(L1_b).id('L2_b');
+  var L3_ab = trax(L2_a,L2_b).id('L3_ab').fct( (x,y) => x+y );
+  var L3_c = trax(L2_b).id('L3_c');
+  var L4_a = trax(L3_ab).id('L4_a');
+  var L4_b = trax(L3_ab).id('L4_b');
+  var L5_a = trax(L4_a).id('L5_a'); // <--
+  var L6_a = trax(L5_a).id('L6_a');
+  var L7_a = trax(L6_a).id('L7_a');
+  var L7_ab = trax(L6_a,L4_b).id('L7_ab').fct( (x,y) => x+y );
+  var L8_ab = trax(L7_ab).id('L8_ab');
+
+  assert_equality(L8_ab(), 12, descr + " (1)");
+  var expectedSubsOfL1_a = 
+  `
+  {
+    "value": "3",
+    "id": "L1_a",
+    "phase": "Symbol(cached)",
+    "-->": [
+      {
+        "value": "3",
+        "id": "L2_a",
+        "phase": "Symbol(cached)",
+        "-->": [
+          {
+            "value": "6",
+            "id": "L3_ab",
+            "phase": "Symbol(cached)",
+            "-->": [
+              {
+                "value": "6",
+                "id": "L4_a",
+                "phase": "Symbol(cached)",
+                "-->": [
+                  {
+                    "value": "6",
+                    "id": "L5_a",
+                    "phase": "Symbol(cached)",
+                    "-->": [
+                      {
+                        "value": "6",
+                        "id": "L6_a",
+                        "phase": "Symbol(cached)",
+                        "-->": [
+                          {
+                            "value": "undefined",
+                            "id": "L7_a",
+                            "phase": "Symbol(invalidated)",
+                            "-->": []
+                          },
+                          {
+                            "value": "12",
+                            "id": "L7_ab",
+                            "phase": "Symbol(cached)",
+                            "-->": [
+                              {
+                                "value": "12",
+                                "id": "L8_ab",
+                                "phase": "Symbol(cached)",
+                                "-->": []
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "value": "6",
+                "id": "L4_b",
+                "phase": "Symbol(cached)",
+                "-->": [
+                  {
+                    "value": "12",
+                    "id": "L7_ab",
+                    "phase": "Symbol(cached)",
+                    "-->": [
+                      {
+                        "value": "12",
+                        "id": "L8_ab",
+                        "phase": "Symbol(cached)",
+                        "-->": []
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }  
+  `
+  assert_equality(L1_a.subs(), expectedSubsOfL1_a.replaceAll(/\s/g, ''), descr + " (2)")
+
+  L5_a.prune();
+
+  assert_equality(L8_ab(), undefined, descr + " (3)");
+  assert_equality(L3_c(), 3, descr + " (4)");
+  assert_equality(L1_a(), undefined, descr + " (5)");
+
+  var expectedSubsOfL1_a_after = 
+  `
+  {
+    "value": "undefined",
+    "id": "L1_a",
+    "phase": "Symbol(cached)",
+    "-->": []
+  }
+  `
+  assert_equality(L1_a.subs(), expectedSubsOfL1_a_after.replaceAll(/\s/g, ''), descr + " (6)")
+
+  var expectedSubsOfL4_a_after = 
+  `
+  {
+    "value": "undefined",
+    "id": "L4_a",
+    "phase": "Symbol(initial)",
+    "-->": []
+  }
+  `
+  assert_equality(L4_a.subs(), expectedSubsOfL4_a_after.replaceAll(/\s/g, ''), descr + " (7)")
+
+  var expectedSubsOfL7_ab_after = 
+  `
+  {
+    "value": "undefined",
+    "id": "L7_ab",
+    "phase": "Symbol(initial)",
+    "-->": []
+  }
+  `
+  assert_equality(L7_ab.subs(), expectedSubsOfL7_ab_after.replaceAll(/\s/g, ''), descr + " (8)")
+  
+  var expectedSubsOfL1_b_after = 
+  `
+  {
+    "value": "3",
+    "id": "L1_b",
+    "phase": "Symbol(cached)",
+    "-->": [
+      {
+        "value": "3",
+        "id": "L2_b",
+        "phase": "Symbol(cached)",
+        "-->": [
+          {
+            "value": "3",
+            "id": "L3_c",
+            "phase": "Symbol(cached)",
+            "-->": []
+          }
+        ]
+      }
+    ]
+  }
+  `
+  assert_equality(L1_b.subs(), expectedSubsOfL1_b_after.replaceAll(/\s/g, ''), descr + " (9)")
+
 })();
 
 
