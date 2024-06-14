@@ -58,3 +58,9 @@ console.log(person());
 e instanceof Trax
 
 // Further examples can be found in the tests.js file
+```
+
+## Documentation
+
+The complete documentation can be found under https://0x1f528.github.io/Trax/index.html
+
