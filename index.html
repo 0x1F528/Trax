@@ -1,0 +1,1668 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Trax Documentation</title>
+        <link rel="stylesheet" href="https://0x1f528.github.io/Trix/utils/JSRepl/jsrepl.css" />
+        <link rel="stylesheet" href="resources/documentation.css" />
+    </head>
+    <body>
+
+        <h1><mark>Trax</mark> <sup><em>a reactive pub/sub framework</em></sup></h1>
+        <p>Inspired by solutions like <a href="https://rxjs.dev/">RxJS</a>, <a href="https://mobx.js.org/">MOBX</a>, <a href="https://github.com/paldepind/flyd">Flyd</a>, <a href="https://www.infoq.com/news/2024/06/javascript-signals-proposal/">signals</a>, <a href="https://en.wikipedia.org/wiki/Reactive_Streams">streams</a>, <a href="https://reactivex.io/documentation/observable.html">observables</a>, <a href="https://projectreactor.io/">mono/flux</a> ... <mark>Trax</mark> is a <strong>minimal</strong> yet <strong>sufficient</strong> reactive framework.</p>
+        <p><mark>Trax</mark> was built with the following goals:
+            <ul class="important">
+                <li><strong>Simple</strong> and <strong>minimal</strong> APIs</li>
+                <li>Composable APIs as <strong>building blocks</strong></li>
+                <li><strong>Fluent</strong> APIs to keep things compact</li>
+                <li>Support <strong>multiple</strong> pub/sub paradigms</li>
+                <ul>
+                    <li>Live vs. passive</li>
+                    <li>Signals vs. observables</li>
+                    <li>Sync vs async updates</li>
+                    <li>Event filtering</li>
+                    <li>Custom event propagation</li>
+                </ul>
+                <li><strong>Explicit</strong> relationship between pub/sub nodes</li>
+                <li>Performant</li>
+                <li>Robust</li>
+                <li><strong>Light</strong> weight</li>
+                <li>Zero dependency</li>
+            </ul>
+        </p>
+        <p><mark>Trax</mark> is a companion module of <mark>Trix</mark>, a reactive UI framework. <mark>Trax</mark> can be used by itself or together with <mark>Trix</mark>.</p>
+
+        <h2>Table of contents</h2>
+        <ol class="important">
+            <li><a href="#overview">Overview</a>
+                <ol>
+                    <li><a href="#overview_pub_sub_hierarchy">Publisher / Subscriber hierarchy</a></li>
+                    <li><a href="#overview_pub_sub_change_propagation">Publisher / Subscriber change propagation</a></li>
+                    <li><a href="#overview_usage">Usage</a></li>
+                </ol>
+            </li>
+            <li><a href="#tutorial">Tutorial</a>
+                <ol>
+                    <li><a href="#tutorial_trax_node">A <mark>Trax</mark> node</a></li>
+                    <li><a href="#tutorial_set_get">Setting and getting the <mark>Trax</mark> node value</a></li>
+                    <li><a href="#tutorial_pub_sub">Pub/sub</a></li>
+                    <li><a href="#tutorial_live">Live handling of events</a></li>
+                    <li><a href="#tutorial_multi_pub_sub">Multiple subscribers, multiple publishers</a></li>
+                    <li><a href="#tutorial_filter">Filtering events</a></li>
+                    <li><a href="#tutorial_async_sync">Async/sync</a></li>
+                    <li><a href="#tutorial_fire">Fire</a></li>
+                    <li><a href="#tutorial_custom_events">Custom events</a></li>
+                    <li><a href="#tutorial_summary">Summary</a></li>
+                    <li><a href="#tutorial_blank_canvas">Blank canvas</a></li>
+                </ol>
+            </li>
+            <li><a href="#companion_modules">Companion modules</a>
+                <ol>
+                    <li><a href="#companion_trex">Trex</a>
+                        <ol>
+                            <li><a href="#companion_trex_apply">APPLY</a></li>
+                            <li><a href="#companion_trex_if">IF</a></li>
+                            <li><a href="#companion_trex_not">NOT</a></li>
+                            <li><a href="#companion_trex_choose">CHOOSE</a></li>
+                            <li><a href="#companion_trex_arraylength">ARRAYLENGTH</a></li>
+                            <li><a href="#companion_trex_filter">FILTER</a></li>
+                            <li><a href="#companion_trex_inc">INC</a></li>
+                            <li><a href="#companion_trex_toggle">TOGGLE</a></li>
+                        </ol>
+                    </li>
+                    <li><a href="#companion_trux">Trux</a>
+                        <ol>
+                            <li><a href="#companion_trux_pipe">pipe, compose, when</a></li>
+                            <li><a href="#companion_trux_reconcilearrays">reconcileArrays</a></li>
+                            <li><a href="#companion_trux_diffmapper">diffMapper</a></li>
+                            <li><a href="#companion_trux_prettyjson">prettyJSON</a></li>
+                        </ol>
+                    </li>
+                </ol>
+            </li>
+            <li><a href="#trax_apis"><mark>Trax</mark> APIs</a>
+                <ol>
+                    <li><a href="#trax_api_trax">trax( ...args )</a></li>
+                    <li><a href="#trax_api_trax_configure">( ...args )</a></li>
+                    <li><a href="#trax_api_trax_value">(&nbsp;)</a></li>
+                    <li><a href="#trax_api_fct">fct( callback )</a></li>
+                    <li><a href="#trax_api_fct_syntax">fct callback function</a></li>
+                    <li><a href="#trax_api_onchange">onChange( callback )</a></li>
+                    <li><a href="#trax_api_onchange_syntax">onchange callback function</a></li>
+                    <li><a href="#trax_api_fire">fire( name?, arg? )</a></li>
+                    <li><a href="#trax_api_handler">handler( name, callback )</a></li>
+                    <li><a href="#trax_api_handler_syntax">event handler callback function</a></li>
+                    <li><a href="#trax_api_deregister">deregister( recursive )</a></li>
+                    <li><a href="#trax_api_prune">prune( )</a></li>
+                    <li><a href="#trax_api_id">id( name )</a></li>
+                    <li><a href="#trax_api_log">log( callback )</a></li>
+                    <li><a href="#trax_api_static_log">Trax.log( callback )</a></li>
+                    <li><a href="#trax_api_logger_syntax">logger callback function</a></li>
+                    <li><a href="#trax_api_pubs">pubs( levels )</a></li>
+                    <li><a href="#trax_api_subs">subs( levels )</a></li>
+                    <li><a href="#trax_api_static_onchange">Trax.onChange( mode )</a></li>
+                </ol>
+            </li>
+            <li><a href="#algorithm">Algorithmic approach</a>
+                <ol>
+                    <li href="#algorithm_deferred">Deferred propagation</li>
+                    <li href="#algorithm_propagation">Change propagation for Live elements</li>
+                    <li href="#algorithm_recalculate">Recalculating the value of Live elements</li>
+                    <li href="#algorithm_onchange">Live elements onChange triggered</li>
+                </ol>
+            </li>
+            <li><a href="#Acknowledgements">Acknowledgements</a></li>
+        </ol>
+
+        <h2 id="overview">Overview</h2>
+        <h4 id="overview_pub_sub_hierarchy">Publisher / Subscriber hierarchy</h4>
+        <article class="figure">
+            <figure>
+                <img src="resources/PubSub.png">
+                <figcaption>A Pub / Sub hierarchy of elements</figcaption>
+            </figure>
+            <div>
+                <p> <mark>Trax</mark> elements either directly wrap a value or reference a list of publishers from which the element's value can be derived.</p>
+                <p>A <mark>Trax</mark> value can be any javascript value: primitive, object, array, function, ...</p>
+                <p>The elements A through H are organized in a publisher / subscriber hierarchy. For example:</p>
+                <ul>
+                    <li>Element B is a subscriber to element A; A is notified of changes to B's value</li>
+                    <li>Element A is a publisher to element B; A notifies B of changes to its value</li>
+                    <li>Element D is a subscriber to both elements B and C</li>
+                    <li>Element D is a publisher to both elements E and F</li>
+                </ul>
+                <p>Each subscriber can implement a transformation / combinator function to derive its value from its publishers.</p>
+                <ul>
+                    <li>Element B's value is a 10 multiple of element A's value</li>
+                    <li>Element D's value is combined by addition of the values of B and C</li>
+                    <li>By default a subscriber takes the value of its publisher (identity function)</li>
+                </ul>
+                <p>The value of an element can be queried, or if so configured can emit it's value on change.</p>
+                <ul>
+                    <li>Element G's value is 34</li>
+                    <li>Element H is <em>Live</em> and will emit its value anytime its publisher updates</li>
+                </ul>
+            </div>
+        </article>
+
+        <h4 id="overview_pub_sub_change_propagation">Publisher / Subscriber change propagation</h4>
+        <article  class="figure">
+            <figure>
+                <img src="resources/PubSubDelta.png">
+                <figcaption>Change propagation through the hierarchy</figcaption>
+            </figure>
+            <div>
+                <p>Changes to a publisher will propagate to its subscribers.</p>
+                <ul>
+                    <li>Element C's value has changed to 5</li>
+                    <li>Element C's subscriber D recalculates its value</li>
+                    <li>Element D is also a publisher and notifies E and F of the change</li>
+                    <li>Following the hierarchy, elements E, F, G, and H also recalculate their respective values</li>
+                    <li>Element H is <em>Live</em> and will emit the new value</li>
+                </ul>
+            </div>
+        </article>
+        <p>Instead of using the imperative logic <quote>d = b + c</quote>, we would declaratively create the pub / sub relationship where d is a subscriber to b and c. 
+            After that, Whenever b or c changes, d is notified and recalculates its value.</p>
+        <p>The principle advantage of the pub / sub declarative approach is that new subscribers can be added to existing hierarchies without touching the existing 
+            hierarchy and no risk of affecting the existing logic. The dependency logic is also elevated to a first class citizen and the made more explicit and crisp.</p>
+        <p>The most notable disadvantage with this declarative approach is that one is "one removed" from the code. 
+            Not having direct language support makes it harder to troubleshoot when things go wrong - as they invariably do.
+            Also, for us imperative programmers, this is an unfamiliar programming paradigm and will require some getting used to.
+        </p>
+
+        <h4 id="overview_usage">Usage</h4>
+        <code>import { trax, Trax } from 'https://0x1f528.github.io/Trax/modules/trax.js'</code>
+        <p>Create subscriber elements using trax( a,b,c ) with a,b,c being javascript values (primitives, objects, functions, ...) or other <mark>trax</mark> elements acting as publishers.
+            The list of publishers can also be set or updated using t( x,y,z ) where t is a <mark>trax</mark> element and x,y,z is the new list of publishers.
+        </p>
+        <p>Define a transformation/aggregation function using t.fct( transformFct ) with t being a <mark>trax</mark> element and transformFct being the transformation/aggregation taking the list of publisher values.</p>
+        <p>The t.onChange( effectFct ) method will make the <mark>trax</mark> element <em>Live</em> and will call the effectFct to perform the desired side effects when publishers notify for updates.</p>
+
+        <h2 id="tutorial">Tutorial</h2>
+        <p><mark>Trax</mark> works by declaratively creating and wiring up <mark>Trax</mark> nodes in a pub/sub dependency graph. 
+            Value changes to publishers propagate from to any subscribers. Subscribers may also function as publishers and pass the update further down the line.
+            The current value can be queried from the <mark>Trax</mark> element or can be emitted via side effect on update events.
+        </p>
+
+        <h4 id="tutorial_trax_node">A <mark>Trax</mark> node</h4>
+        <p>Let's look at an example. Creating a <mark>Trax</mark> node is as simple as</p>
+
+        <article class="code-example">
+            <header>Creating a&nbsp;<mark>Trax</mark>&nbsp;node</header>
+            <code><pre>
+                import { trax } from 'https://0x1f528.github.io/Trax/modules/trax.js'
+                <example>
+                    var node = trax();
+                </example>
+            </pre></code>
+        </article>
+
+        <p>The node we just created has no value. A value can be set during initialization or later. </p>
+
+        <h4 id="tutorial_set_get">Setting and getting the <mark>Trax</mark> node value</h4>
+        <p>The <mark>Trax</mark> nodes follow a setter/getter functional pattern where parameters passed in are set to the node - 
+            when no parameters are passed in the function simply returns its current value.</p>
+
+
+        <article class="code-example">
+            <header>Setting a value</header>
+            <code><pre>
+                import { trax } from 'https://0x1f528.github.io/Trax/modules/trax.js'
+                console.log = (x) => {
+                    const body = document.getElementsByTagName("body")[0];
+                    const text = document.createTextNode(x);
+                    const br = document.createElement("br");
+                    body.appendChild(text);
+                    body.appendChild(br);
+                }
+                <example>
+                    var node = trax( 4 );
+                    var oden = trax();
+                    oden( "Hello world!" );     // setter
+
+                    console.log( node() );
+                    console.log( oden() );      // getter
+                </example>
+            </pre></code>
+        </article>
+
+        <p>It might be helpful to think of the value being set to the <mark>Trax</mark> node as a publisher for this node. (And that this node is subscribing to the value being set)</p>
+        
+        <h4 id="tutorial_pub_sub">Pub/sub</h4>
+        <p>The publisher/subscriber linkage becomes clearer when we wire up several <mark>Trax</mark> nodes</p>
+
+        <article class="code-example">
+            <header>Setting a value</header>
+            <code><pre>
+                import { trax } from 'https://0x1f528.github.io/Trax/modules/trax.js'
+                console.log = (x) => {
+                    const body = document.getElementsByTagName("body")[0];
+                    const text = document.createTextNode(x);
+                    const br = document.createElement("br");
+                    body.appendChild(text);
+                    body.appendChild(br);
+                }
+                <example>
+                    var one = trax( 4 );
+                    var two = trax( one );
+                    var three = trax( two );
+                    
+                    console.log( "one: "+ one() );
+                    console.log( "three: "+ three() );
+                    console.log( "----" );
+                    
+                    one( 56 ); // setting one to a new value 56
+                    
+                    console.log( "one: "+ one() );
+                    console.log( "three: "+ three() );
+                </example>
+            </pre></code>
+        </article>
+
+        <p>You can see how the value of "one" propagates through "two" and then "three". A change to "one" results in a change in "three".</p>
+        <p>Often we are not just passively interested the current value of a subscriber, but we also want to be able to act upon the change event itself.</p>
+        
+        <h4 id="tutorial_live">Live handling of events</h4>
+        <p>You can access live <mark>Trax</mark> updates by adding an "onChange" function.</p>
+
+        <article class="code-example">
+            <header>Setting a value</header>
+            <code><pre>
+                import { trax } from 'https://0x1f528.github.io/Trax/modules/trax.js'
+                console.log = (x) => {
+                    const body = document.getElementsByTagName("body")[0];
+                    const text = document.createTextNode(x);
+                    const br = document.createElement("br");
+                    body.appendChild(text);
+                    body.appendChild(br);
+                }
+                <example>
+                    var one = trax( 4 );
+                    var two = trax( one );
+                    var three = trax( two )
+                        .onChange( (x) => console.log("LIVE three: "+ x) );
+                    
+                    console.log( "one: "+ one() );
+                    console.log( "three: "+ three() );
+                    console.log( "----" );
+                    
+                    one( 56 ); // setting one to a new value 56
+                    
+                    console.log( "one: "+ one() );
+                    console.log( "three: "+ three() );
+                </example>
+            </pre></code>
+        </article>
+
+        <p>Run the code to see how the onChange function is called immediately after "one" is updated to 56.</p>
+        <p>Note the fluent API chaining. <mark>Trax</mark> APIs will update the node configuration and then return the node itself for further configuration. 
+            The only obvious exception is that when calling the <mark>Trax</mark> node getter (calling the function without a parameter) the value is returned, not the node.</p>
+        
+        <h4 id="tutorial_multi_pub_sub">Multiple subscribers, multiple publishers</h4>
+        <p>We would be severely limited if could only create linear dependencies between <mark>Trax</mark> nodes.</p>
+        <p><mark>Trax</mark> nodes can depend on multiple publishers and have multiple subscribers!</p>
+        <p>Let's try this!</p>
+
+        <article class="code-example">
+            <header>Multiple subscribers, multiple publishers</header>
+            <code><pre>
+                import { trax } from 'https://0x1f528.github.io/Trax/modules/trax.js'
+                console.log = (x) => {
+                    const body = document.getElementsByTagName("body")[0];
+                    const text = document.createTextNode(x);
+                    const br = document.createElement("br");
+                    body.appendChild(text);
+                    body.appendChild(br);
+                }
+                <example>
+                    var first = trax( "John" );
+                    var last = trax( "Doe" );
+                    var fullName = trax( first, last, "Jr." )       // <-- multiple subscribers
+                        .fct( (x,y, z) => x + " " + y + " " + z);   // <-- fct to combine values
+                    var allCaps = trax( fullName )
+                        .fct( (x) => x.toUpperCase() );             // <-- transform value
+                    var lowerCase = trax( fullName )
+                        .fct( (x) => x.toLowerCase() )
+                        .onChange( (x) => console.log("LIVE lowerCase: "+ x) );
+                    
+                    console.log( "fullName: "+ fullName() );
+                    console.log( "allCaps: "+ allCaps() );
+                    console.log( "lowerCase: "+ lowerCase() );
+                    console.log( "----" );
+                    
+                    first( "Jane" ); // setting first to the new value "Jane"
+                    
+                    console.log( "fullName: "+ fullName() );
+                    console.log( "allCaps: "+ allCaps() );
+                    console.log( "lowerCase: "+ lowerCase() );
+                </example>
+            </pre></code>
+        </article>
+
+        <p>This latest example introduces several new features:
+            <ul>
+                <li>The fullName <mark>Trax</mark> node illustrates how a <mark>Trax</mark> node can subscribe to multiple publishers.</li>
+                <li>The new fct() API explicitly provides the required logic to combine the three publisher values.</li>
+                <li>A <mark>Trax</mark> node will only contain a single value (be it a primitive or any JS Object). The fct() is used derive that single value out of multiple publishers.</li>
+                <li>Note that the publishers aren't restricted to <mark>Trax</mark> nodes, but can be any javascript value.</li>
+                <li>Also, the fullName <mark>Trax</mark> node has two subscribers that will react to fullName changes.</li>
+                <li>The fct() API can also be used on single publisher <mark>Trax</mark> nodes to perform a transform on the value that will become the <mark>Trax</mark> node's value.
+                    In this example we transform the full name to all caps in one case and to all lower caps in the other.</li>
+                <li>The default (and hidden) fct() API is an identity function that simply copies the first publisher value. 
+                    You can try this out by editing the above code directly in the browser. Remove the fct() from the fullName <mark>Trax</mark> node and see what happens.</li>
+                <li>What do you think will happen if you add the line <pre>fullName( first, last, "Sr.")</pre> to the end of the code above? </li>
+            </ul>
+        </p>
+
+        <h4 id="tutorial_filter">Filtering events</h4>
+        <p>Imagine you have some periodic event (for example mouse clicks) and you want to filter them out if they are too close together (debounce), 
+            or only want to allow a sampling of events to get through. <mark>Trax</mark> allows you to filter events along the dependency chain so that the higher up nodes never see the event.
+        </p>
+
+        <article class="code-example">
+            <header>Filter events</header>
+            <code><pre>
+                import { trax, Trax } from 'https://0x1f528.github.io/Trax/modules/trax.js'
+                console.log = (x) => {
+                    const body = document.getElementsByTagName("body")[0];
+                    const text = document.createTextNode(x);
+                    const br = document.createElement("br");
+                    body.appendChild(text);
+                    body.appendChild(br);
+                }
+                <example>
+                    var clickEvent = trax(0);
+                    var intervalHandle = setInterval( () => { clickEvent( clickEvent() + 1 ) }, 1000);
+                    
+                    var everyClick = trax( clickEvent )
+                        .onChange( (x) => console.log("every click: "+x) );
+                    var everySecondClick = trax( clickEvent )
+                        .fct( (x) => (x%2) ? x : Trax.HALT )                    // (*) filter out the even clicks
+                        .onChange( (x) => console.log("every second click: "+x) );
+                    
+                    var makeItStop = trax( intervalHandle, clickEvent )
+                        .fct( (i,e) => { if (e > 8) clearInterval(i); } )       // (**) only for 8 seconds
+                        .onChange( true );                                      // (***)
+                </example>
+            </pre></code>
+        </article>
+
+        <p>Again, we discover a few new features:
+            <ul>
+                <li>When a function returns the magic <mark>Trax</mark>.HALT (*) the event is hidden from downstream dependent subscribers (and from the onChange handler).</li>
+                <li>Instead of providing a onChange function we can also simply set it to true (***) and build a side-effect into the fct (**).
+                    We do this because we want to have access to both the clickEvent itself as well as the everySecond interval handle so we can clearInterval after 8 seconds.
+                    The onChange handler only has access to the (new) value of the <mark>Trax</mark> node and not the two publisher values.<br/>
+                    Another way we could have solved this is to have the function create a two-element tuple (an array with two values, or an object with two attributes) 
+                    capturing the two values. The onChange function could then use the tuple information to implement the clearInterval functionality.<br/>
+                    Do you want to have a go and try this approach in the code above?
+                </li>
+            </ul>
+        </p>
+
+        <h4 id="tutorial_async_sync">Async/sync</h4>
+        <p><mark>Trax</mark> can handle live updates either synchronously or asynchronously. In the synchronous case the event is handled right then and there. 
+            In the asynchronous case the live updates are batched and handled as a group at the end.</p>
+        <p>Asynchronous mode might make more sense in the case of a web site where we want to reflect the final outcome and not flash all the intermediate results. 
+            It would also be more efficient as any side-effects are acted upon only once.</p>
+        <p>Synchronous mode would be for cases where every event is important (say counting events) whereas batched events may only keep the last event.</p>
+
+        <article class="code-example">
+            <header>Async / sync handling of events</header>
+            <code><pre>
+                import { trax, Trax } from 'https://0x1f528.github.io/Trax/modules/trax.js'
+                console.log = (x) => {
+                    const body = document.getElementsByTagName("body")[0];
+                    const text = document.createTextNode(x);
+                    const br = document.createElement("br");
+                    body.appendChild(text);
+                    body.appendChild(br);
+                }
+                <example>
+                    Trax.onChange(Trax.MODE.SYNC);
+                    var event = trax(0).onChange( (x) => console.log( "--> "+ x ) );
+                    event(22);
+                    event(3001);
+                    event(7);
+                    
+                    console.log( "final value: "+ event() );
+                </example>
+            </pre></code>
+        </article>
+
+        <p>Change the setting on the first line from <mark>Trax</mark>.MODE.SYNC to <mark>Trax</mark>.MODE.<strong>A</strong>SYNC and rerun.</p>
+        <p>In Async mode the events 22 and 3001 are superseded by the 7 event and lost</p>
+        <p>In general I would recommend Async mode unless there is a reason to go with Sync mode.</p>
+
+        <h4 id="tutorial_fire">Fire</h4>
+        <p>Often we might be more interested in the actual event than the value.</p>
+        <p>Button clicks, mouse clicks, and interval expirations are examples of events without meaningful values.</p>
+        <p>We could use trax('whatever') call to trigger an update event that would propagate to the subscribers, but <mark>Trax</mark> 
+            implements a fire() method dedicated to this use case.</p>
+
+        <article class="code-example">
+            <header>Fire</header>
+            <code><pre>
+                import { trax } from 'https://0x1f528.github.io/Trax/modules/trax.js'
+                console.log = (x) => {
+                    const body = document.getElementsByTagName("body")[0];
+                    const text = document.createTextNode(x);
+                    const br = document.createElement("br");
+                    body.appendChild(text);
+                    body.appendChild(br);
+                }
+                <example>
+                    var event = trax();
+                    var subscriber1 = trax( event );
+                    var subscriber2 = trax( subscriber1 )
+                        .onChange( (x) => console.log( "Oh look, an event happened" ));
+                    event.fire();
+                    setTimeout( () => event.fire(), 1000 );
+                    setTimeout( () => event.fire(), 2000 );
+                </example>
+            </pre></code>
+        </article>
+
+        <p>Try changing the code above to use event('') instead of fire().</p>
+        <p>Would using event() work?</p>
+
+        <h4 id="tutorial_custom_events">Custom events</h4>
+        <p>Piggybacking on the fire() API we can also create custom events (as opposed to the normal update events).</p>
+        <p>Custom events will propagate along the dependency tree just like the update events, but they will NOT change the value of the <mark>Trax</mark> node.</p>
+
+        <article class="code-example">
+            <header>Custom events</header>
+            <code><pre>
+                import { trax } from 'https://0x1f528.github.io/Trax/modules/trax.js'
+                console.log = (x) => {
+                    const body = document.getElementsByTagName("body")[0];
+                    const text = document.createTextNode(x);
+                    const br = document.createElement("br");
+                    body.appendChild(text);
+                    body.appendChild(br);
+                }
+                <example>
+                    var event = trax(0);
+                    var subscriber1 = trax( event );
+                    var subscriber2 = trax( subscriber1 )
+                        .handler('whazzup', (value,thiz,arg1,arg2) => (arg1+" "+arg2).toUpperCase() );
+                    var subscriber3 = trax( subscriber2 );
+                    var subscriber4 = trax( subscriber3 )
+                        .handler('whazzup', (value,thiz,arg1) => console.log( 'How are you '+arg1+'?' ))
+                        .onChange( true );
+                    event.fire('whazzup', 'John','Henry');
+                </example>
+            </pre></code>
+        </article>
+
+        <p>As you can see, intermediary <mark>Trax</mark> nodes can transform the (optional) custom event parameters. 
+            They could also return <mark>Trax</mark>.HALT to keep the event from bubbling further up the subscriber chain. 
+            Unlike update events, the event propagation only works if a higher-level node is Live. There is no way to query for a custom event.
+            The value transmitted up the chain is transient and not cached or stored.
+        </p>
+
+        <h4 id="tutorial_summary">Summary</h4>
+
+        <p>Did this feel like a lot?</p>
+        <p>Quite a few details, but conceptually the behavior is consistent and is accomplished by just a handful of primitives.</p>
+        <table>
+            <caption>"t" shall denote a <mark>Trax</mark> instances in this table</caption>
+            <thead>
+                <tr>
+                    <th scope="col">API</th>
+                    <th scope="col">Purpose</th>
+                    <th scope="col">Params</th>
+                    <th scope="col">Result</th>
+                </tr>
+            </thead>
+            <tr>
+                <th scope="row">trax(&nbsp;...args&nbsp;)</th>
+                <td>Create a new <mark>Trax</mark> node</td>
+                <td>Optional initial values/<mark>Trax</mark> nodes</td>
+                <td>t</td>
+            </tr>
+            <tr>
+                <th scope="row">t(&nbsp;...args&nbsp;)</th>
+                <td>Set the <mark>Trax</mark> node to args</td>
+                <td>Values/<mark>Trax</mark> nodes</td>
+                <td>t</td>
+            </tr>
+            <tr>
+                <th scope="row">t(&nbsp;)</th>
+                <td>Get the <mark>Trax</mark> node value</td>
+                <td>N/A</td>
+                <td>value</td>
+            </tr>
+            <tr>
+                <th scope="row">t.fct(&nbsp;f&nbsp;)</th>
+                <td>Set the transformation function that defines this <mark>Trax</mark> node's value</td>
+                <td>A function that takes args number of parameters and returns a single value</td>
+                <td>t</td>
+            </tr>
+            <tr>
+                <th scope="row">t.onChange(&nbsp;f&nbsp;)</th>
+                <td>Set the onChange function to handle any side effects</td>
+                <td>A function that takes a single parameter</td>
+                <td>t</td>
+            </tr>
+            <tr>
+                <th scope="row">t.fire(&nbsp;name,&nbsp;...args&nbsp;)</th>
+                <td>Fire an event</td>
+                <td>An optional event name and optional event parameters; if neither is present will be handled as a default update event</td>
+                <td>t</td>
+            </tr>
+            <tr>
+                <th scope="row">t.handler(&nbsp;name,&nbsp;f&nbsp;)</th>
+                <td>Set an event handler</td>
+                <td>Event name and function to handle the event; the response is passed up the subscriber chain</td>
+                <td>t</td>
+            </tr>
+            <tr>
+                <th scope="row">Trax.HALT</th>
+                <td>When returned by a fct or handler function, blocks the event from further propagating</td>
+                <td>N/A</td>
+                <td>N/A</td>
+            </tr>
+        </table>
+
+        <p>There are a few cleanup and trouble shooting APIs that have not been covered in this tutorial. You can read more about them in the API documentation</p>
+
+        <h4 id="tutorial_blank_canvas">Here is a blank canvas for you to try things out :-)</h4>
+        
+        <article class="code-example">
+            <header>Have fun</header>
+            <code><pre>
+                import { trax, Trax } from 'https://0x1f528.github.io/Trax/modules/trax.js'
+                console.log = (x) => {
+                    const body = document.getElementsByTagName("body")[0];
+                    const text = document.createTextNode(x);
+                    const br = document.createElement("br");
+                    body.appendChild(text);
+                    body.appendChild(br);
+                }
+                <example>
+                    // add your code here
+
+
+
+
+
+
+
+
+
+
+
+                </example>
+            </pre></code>
+        </article>
+
+
+        <h2 id="companion_modules">Other Modules</h2>
+
+        <p><mark>Trax</mark> has two optional companion modules, Trex and Trux</p>
+
+        <h4 id="companion_trex">Trex</h4>
+        <p>Trex provides a number of prebuilt <mark>Trax</mark> functions. You can use them directly in your code or use them as inspiration for your own special cases.</p>
+
+        <h5 id="companion_trex_apply">APPLY</h5>
+        Apply a function to an element.
+        <code class="apidoc">
+            APPLY( observed: T, applier: (v: T) => V ): <mark>Trax</mark>&lt;V&gt;
+            <dl>
+                <dt>observed</dt>
+                <dd>T <span>(*)</span></dd>
+                <dd>The input value to be applied</dd>
+                <dt>applier</dt>
+                <dd>(v: T) => V <span>(*)</span></dd>
+                <dd>Function that will be applied to the observed</dd>
+                <dt class="return">Returns</dt>
+                <dd class="return">Trax&lt;V&gt;</dd>
+                <dd class="return"> <mark>Trax</mark> holding the result</dd>
+            </dl>
+            <span>(*)</span>: can always be &lt;type&gt; or <mark>Trax</mark>&lt;type&gt; as <mark>Trax</mark> will unwrap the value for evaluation
+        </code>
+
+        <p>APPLY is syntactic sugar to create a new <mark>Trax</mark> instance and add a transform fct to it.
+            This is mostly useful to inline these steps into a parameter.</p>
+
+        <article class="code-example">
+            <header>APPLY</header>
+            <code><pre>
+                import { trax } from 'https://0x1f528.github.io/Trax/modules/trax.js'
+                import { APPLY } from 'https://0x1f528.github.io/Trax/modules/trex.js'
+                console.log = (x) => {
+                    const body = document.getElementsByTagName("body")[0];
+                    const text = document.createTextNode(x);
+                    const br = document.createElement("br");
+                    body.appendChild(text);
+                    body.appendChild(br);
+                }
+                <example>
+                    let observed = trax("flintstone");
+                    console.log( APPLY( observed, (x) => x.toUpperCase() )() );
+                </example>
+            </pre></code>
+        </article>
+
+        <h5 id="companion_trex_if">IF</h5>
+        Implements If/Else.
+        <code class="apidoc">
+            IF( criteria: boolean, yes: any, no: any ): <mark>Trax</mark>&lt;any&gt;
+            <dl>
+                <dt>criteria</dt>
+                <dd>boolean <span>(*)</span></dd>
+                <dd>criteria to choose yes or no</dd>
+                <dt>yes</dt>
+                <dd>any <span>(*)</span></dd>
+                <dd>Value to be returned if criteria is true</dd>
+                <dt>no</dt>
+                <dd>any <span>(*)</span></dd>
+                <dd>Value to be returned if criteria is false</dd>
+                <dt class="return">Returns</dt>
+                <dd class="return">Trax&lt;any&gt;</dd>
+                <dd class="return"> <mark>Trax</mark> holding the yes or no result</dd>
+            </dl>
+            <span>(*)</span>: can always be &lt;type&gt; or <mark>Trax</mark>&lt;type&gt; as <mark>Trax</mark> will unwrap the value for evaluation
+        </code>
+
+        <article class="code-example">
+            <header>IF</header>
+            <code><pre>
+                import { trax } from 'https://0x1f528.github.io/Trax/modules/trax.js'
+                import { APPLY,IF } from 'https://0x1f528.github.io/Trax/modules/trex.js'
+                console.log = (x) => {
+                    const body = document.getElementsByTagName("body")[0];
+                    const text = document.createTextNode(x);
+                    const br = document.createElement("br");
+                    body.appendChild(text);
+                    body.appendChild(br);
+                }
+                <example>
+                    let count = trax(8);
+                    let result = IF(APPLY(count, (cnt) => cnt > 10), "count is greater than 10", "count is less or equal to 10" );
+                    console.log( result() );
+                    
+                    count(11);
+                    console.log( result() );
+                </example>
+            </pre></code>
+        </article>
+
+        <h5 id="companion_trex_not">NOT</h5>
+        Apply NOT to a boolean value.
+        <code class="apidoc">
+            NOT( criteria: boolean ): <mark>Trax</mark>&lt;boolean&gt;
+            <dl>
+                <dt>criteria</dt>
+                <dd>boolean <span>(*)</span></dd>
+                <dd>criteria to choose yes or no</dd>
+                <dt class="return">Returns</dt>
+                <dd class="return">Trax&lt;boolean&gt;</dd>
+                <dd class="return"> <mark>Trax</mark> holding the negation of the input criteria</dd>
+            </dl>
+            <span>(*)</span>: can always be &lt;type&gt; or <mark>Trax</mark>&lt;type&gt; as <mark>Trax</mark> will unwrap the value for evaluation
+        </code>
+
+        <article class="code-example">
+            <header>NOT</header>
+            <code><pre>
+                import { trax } from 'https://0x1f528.github.io/Trax/modules/trax.js'
+                import { APPLY,IF,NOT } from 'https://0x1f528.github.io/Trax/modules/trex.js'
+                console.log = (x) => {
+                    const body = document.getElementsByTagName("body")[0];
+                    const text = document.createTextNode(x);
+                    const br = document.createElement("br");
+                    body.appendChild(text);
+                    body.appendChild(br);
+                }
+                <example>
+                    let count = trax(8);
+                    let result = IF(NOT(APPLY(count, (cnt) => cnt > 10)), "count is less or equal to 10", "count is greater than 10" );
+                    console.log( result() );
+                    
+                    count(11);
+                    console.log( result() );
+                </example>
+            </pre></code>
+        </article>
+
+        <h5 i="companion_trex_choose">CHOOSE</h5>
+        Choose an entry based on a key.
+        <code class="apidoc">
+            CHOOSE( key: any, lookup: Array&lt;any&gt; | Object, otherwise: any ): <mark>Trax</mark>&lt;any&gt;
+            <dl>
+                <dt>key</dt>
+                <dd>any <span>(*)</span></dd>
+                <dd>Key that will be applied to the lookup for evaluation</dd>
+                <dt>lookup</dt>
+                <dd>Array&lt;any&gt; | Object <span>(*)</span></dd>
+                <dd>Used as the lookup table/object</dd>
+                <dt>otherwise</dt>
+                <dd>any <span>(*)</span></dd>
+                <dd>Value to be returned if the key was not found in lookup</dd>
+                <dt class="return">Returns</dt>
+                <dd class="return">Trax&lt;any&gt;</dd>
+                <dd class="return"> <mark>Trax</mark> holding the result of evaluating lookup[key]</dd>
+            </dl>
+            <span>(*)</span>: can always be &lt;type&gt; or <mark>Trax</mark>&lt;type&gt; as <mark>Trax</mark> will unwrap the value for evaluation
+        </code>
+
+        <p>CHOOSE behaves a bit like a case statement. We can select a result based on an input key.</p>
+        <p>The lookup selection can be an array or an object; anything that can evaluate lookup[key].</p>
+
+        <article class="code-example">
+            <header>CHOOSE</header>
+            <code><pre>
+                import { trax } from 'https://0x1f528.github.io/Trax/modules/trax.js'
+                import { CHOOSE } from 'https://0x1f528.github.io/Trax/modules/trex.js'
+                console.log = (x) => {
+                    const body = document.getElementsByTagName("body")[0];
+                    const text = document.createTextNode(x);
+                    const br = document.createElement("br");
+                    body.appendChild(text);
+                    body.appendChild(br);
+                }
+                <example>
+                    let key = trax();
+                    let lookup = trax(["zero","one","two","three","four"]);
+                    CHOOSE(key, lookup, "failed").
+                        onChange( (x) => console.log(x));
+                    key(4);
+                    key(11);
+                    key(1);
+                    console.log('--------------')
+                    
+                    lookup(
+                        {
+                            "zero":"null",
+                            "one":"eins",
+                            "two":"zwei",
+                            "three":"drei"
+                            ,"four":"vier"
+                        }
+                    )
+                    key("four");
+                    key("eleven");
+                    key("one");
+                </example>
+            </pre></code>
+        </article>
+
+        <p>Pop Quiz: Why do we get that extra "failed" output before the "vier" result?</p>
+
+        <h5 id="companion_trex_arraylength">ARRAYLENGTH</h5>
+        Get the length of an array.
+        <code class="apidoc">
+            ARRAYLENGTH( arr: Array&lt;any&gt; ): <mark>Trax</mark>&lt;number&gt;
+            <dl>
+                <dt>arr</dt>
+                <dd>Array&lt;any&gt; <span>(*)</span></dd>
+                <dd>Input array</dd>
+                <dt class="return">Returns</dt>
+                <dd class="return">Trax&lt;number&gt;</dd>
+                <dd class="return"> <mark>Trax</mark> holding the length of the array</dd>
+            </dl>
+            <span>(*)</span>: can always be &lt;type&gt; or <mark>Trax</mark>&lt;type&gt; as <mark>Trax</mark> will unwrap the value for evaluation
+        </code>
+
+        <article class="code-example">
+            <header>ARRAYLENGTH</header>
+            <code><pre>
+                import { trax } from 'https://0x1f528.github.io/Trax/modules/trax.js'
+                import { ARRAYLENGTH } from 'https://0x1f528.github.io/Trax/modules/trex.js'
+                console.log = (x) => {
+                    const body = document.getElementsByTagName("body")[0];
+                    const text = document.createTextNode(x);
+                    const br = document.createElement("br");
+                    body.appendChild(text);
+                    body.appendChild(br);
+                }
+                <example>
+                    let arr = trax([1,16,6,3,88]);
+                    let display = trax(arr, ARRAYLENGTH(arr))
+                        .fct( (a,l) => "["+a+"] has "+l+" elements");
+                    console.log( display() );
+                </example>
+            </pre></code>
+        </article>
+
+        <h5 id="companion_trex_filter">FILTER</h5>
+        Filter an array
+        <code class="apidoc">
+            FILTER( arr: Array&lt;T&gt;, filter: (T) => boolean ): <mark>Trax</mark>&lt;Array&lt;T&gt;&gt;
+            <dl>
+                <dt>arr</dt>
+                <dd>Array&lt;T&gt; <span>(*)</span></dd>
+                <dd>The array to be filtered</dd>
+                <dt>filter</dt>
+                <dd>(T) => boolean <span>(*)</span></dd>
+                <dd>Function that will used to filter the input array</dd>
+                <dt class="return">Returns</dt>
+                <dd class="return">Trax&lt;Array&lt;T&gt;&gt</dd>
+                <dd class="return"> <mark>Trax</mark> holding the filtered array</dd>
+            </dl>
+            <span>(*)</span>: can always be &lt;type&gt; or <mark>Trax</mark>&lt;type&gt; as <mark>Trax</mark> will unwrap the value for evaluation
+        </code>
+
+        <article class="code-example">
+            <header>FILTER</header>
+            <code><pre>
+                import { trax } from 'https://0x1f528.github.io/Trax/modules/trax.js'
+                import { FILTER } from 'https://0x1f528.github.io/Trax/modules/trex.js'
+                console.log = (x) => {
+                    const body = document.getElementsByTagName("body")[0];
+                    const text = document.createTextNode(x);
+                    const br = document.createElement("br");
+                    body.appendChild(text);
+                    body.appendChild(br);
+                }
+                <example>
+                    let arr = trax([1,16,6,3,88]);
+                    let filterFct = trax( (x) => x%2 );
+                    let display = FILTER( arr, filterFct );
+                    console.log( display() );
+                    
+                    filterFct( (x) => x%4===0 );
+                    console.log( display() );
+                </example>
+            </pre></code>
+        </article>
+
+        <p>Note that a <mark>Trax</mark> node can even hold a function.</p>
+
+        <h5 id="companion_trex_inc">INC</h5>
+        Increments a counter on every invocation.
+        <code class="apidoc">
+            INC( event: <mark>Trax</mark>, initial: number, increment?: number, max?: number ): <mark>Trax</mark>&lt;number&gt;
+            <dl>
+                <dt>event</dt>
+                <dd>Trax</dd>
+                <dd> <mark>Trax</mark> events to be counted</dd>
+                <dt>initial</dt>
+                <dd>number <span>(*)</span></dd>
+                <dd>Initial count</dd>
+                <dt>increment?</dt>
+                <dd>number <span>(*)</span></dd>
+                <dd>By how much the count should increase on each event (optional, defaults to 1)</dd>
+                <dt>max?</dt>
+                <dd>number <span>(*)</span></dd>
+                <dd>Maximum count value; count will wrap when greater than max using a modulo operator (optional, defaults to no max value)</dd>
+                <dt class="return">Returns</dt>
+                <dd class="return">Trax&lt;number;&gt</dd>
+                <dd class="return"> <mark>Trax</mark> holding the current count of events</dd>
+            </dl>
+            <span>(*)</span>: can always be &lt;type&gt; or <mark>Trax</mark>&lt;type&gt; as <mark>Trax</mark> will unwrap the value for evaluation
+        </code>
+            
+        <article class="code-example">
+            <header>INC</header>
+            <code><pre>
+                import { trax } from 'https://0x1f528.github.io/Trax/modules/trax.js'
+                import { INC } from 'https://0x1f528.github.io/Trax/modules/trex.js'
+                console.log = (x) => {
+                    const body = document.getElementsByTagName("body")[0];
+                    const text = document.createTextNode(x);
+                    const br = document.createElement("br");
+                    body.appendChild(text);
+                    body.appendChild(br);
+                }
+                <example>
+                    let event = trax();
+                    let increment = trax(2);
+                    INC(event, 3, increment, 5)
+                        .onChange( (x) => console.log(x) );
+                    event.fire();
+                    event.fire();
+                    event.fire();
+                    event.fire();
+                    event.fire();
+                    event.fire();
+                    
+                    console.log( '---------' );
+                    increment(3);           // Note: changing the increment will also fire the INC.
+                    event.fire();
+                    event.fire();
+                </example>
+            </pre></code>
+        </article>
+
+        <p>Can you write your own INC that won't fire INC when changing the increment? Look at Trux.diffMapper for inspiration.</p>
+
+        <h5 id="companion_trex_toggle">TOGGLE</h5>
+        Toggles a boolean value.
+        <code class="apidoc">
+            TOGGLE( initial: boolean ): <mark>Trax</mark>&lt;boolean&gt;
+            <dl>
+                <dt>initial</dt>
+                <dd>boolean</dd>
+                <dd>Initial value</dd>
+                <dt class="return">Returns</dt>
+                <dd class="return">Trax&lt;boolean&gt;</dd>
+                <dd class="return"> <mark>Trax</mark> holding the current toggle value; will negate on every evaluation/call</dd>
+            </dl>
+        </code>
+
+        <article class="code-example">
+            <header>TOGGLE</header>
+            <code><pre>
+                import { trax } from 'https://0x1f528.github.io/Trax/modules/trax.js'
+                import { TOGGLE } from 'https://0x1f528.github.io/Trax/modules/trex.js'
+                console.log = (x) => {
+                    const body = document.getElementsByTagName("body")[0];
+                    const text = document.createTextNode(x);
+                    const br = document.createElement("br");
+                    body.appendChild(text);
+                    body.appendChild(br);
+                }
+                <example>
+                    let event = trax(true);
+                    TOGGLE(event)
+                        .onChange( (x) => console.log(x) );
+                    event.fire();
+                    event.fire();
+                    event.fire();
+                    event.fire();
+                </example>
+            </pre></code>
+        </article>
+
+        <h5 id="companion_trex_xhr">XHR</h5>
+        Make a XMLHttpRequest.
+        <code class="apidoc">
+            XHR( url: <mark>Trax</mark>&lt;string&gt;, traxNode: <mark>Trax</mark>&lt;string&gt;, req?: XMLHttpRequest ): <mark>Trax</mark>
+            <dl>
+                <dt>url</dt>
+                <dd><mark>Trax</mark>&lt;string&gt;</dd>
+                <dd>Data URL</dd>
+                <dt>traxNode</dt>
+                <dd><mark>Trax</mark>&lt;string&gt;</dd>
+                <dd><mark>Trax</mark> output node to accept the XMLHttpRequest response</dd>
+                <dt>req?</dt>
+                <dd>XMLHttpRequest</dd>
+                <dd>XMLHttpRequest instance; optional: if not provided a XMLHttpRequest instance will be created</dd>
+                <dt class="return">Returns</dt>
+                <dd class="return">Trax</dd>
+                <dd class="return"> <mark>Trax</mark> node that will perform the XMLHttpRequest on url update</dd>
+            </dl>
+        </code>
+
+        <article class="code-example">
+            <header>XHR</header>
+            <code><pre>
+                import { trax, Trax } from 'https://0x1f528.github.io/Trax/modules/trax.js'
+                import { XHR } from 'https://0x1f528.github.io/Trax/modules/trex.js'
+                console.log = (x) => {
+                    const body = document.getElementsByTagName("body")[0];
+                    const text = document.createTextNode(x);
+                    const br = document.createElement("br");
+                    body.appendChild(text);
+                    body.appendChild(br);
+                }
+                <example>
+                    let companyId = 1;
+                    let companyLookup = trax().fct( (id) => (id) ? 'sample_data/company'+id : Trax.HALT);
+                    let accountId = trax();
+                    XHR(companyLookup, accountId);
+                    
+                    let accountLookup = trax(accountId).fct( (id) => (id) ? 'sample_data/account'+id : Trax.HALT);
+                    let employeeName = trax().onChange( (n) => console.log(n) );
+                    XHR(accountLookup, employeeName);
+                    
+                    companyLookup(companyId); // this starts the lookup chain
+                </example>
+            </pre></code>
+        </article>
+        <p>The contents of data1 is "313"</p>
+        <p>The contents of data313 is "Fred Flintstone"</p>
+        <p>In the example you can see how to chain multiple requests. 
+            After the accountId is returned the employee data will be fetched and available in the employeeName <mark>Trax</mark> instance.
+        </p>
+        <p>If you want to try out something more, there is a data2 url with contents "313|212"</p>
+        <p>and a data212 url with contents "Barney Rubble"</p>
+        <p>Note: Using fetch and passing promises as values into the <mark>Trax</mark> nodes would be more elegant. Do you want to give that a try?</p>
+
+
+        <h4 id="companion_trux">Trux</h4>
+        <p>To keep dependencies on other libraries low I put some useful code snippets used in demo/test code into an independent Trux utility module.</p>
+        <p>You may not feel any great need to use Trux, as you could easily create your own based on your needs. For completeness a quick overview of the methods provided...</p>
+
+        <h5 id="companion_trux_pipe">pipe, compose, when</h5>
+        <p>A bit of support for functional programming allowing you to execute a sequence of functions, the result of one feeding into the next.</p>
+        <code class="apidoc">
+            pipe( ...arr: (any) => any ): (any) => any
+            <dl>
+                <dt>...arr</dt>
+                <dd>(any) => any</dd>
+                <dd>List of input functions to be evaluated sequentially</dd>
+                <dt class="return">Returns</dt>
+                <dd class="return">(any) => any</dd>
+                <dd class="return">Function that will apply the list of input functions sequentially</dd>
+            </dl>
+        </code>
+        <code class="apidoc">
+            compose( ...arr: (any) => any ): (any) => any
+            <dl>
+                <dt>...arr</dt>
+                <dd>(any) => any</dd>
+                <dd>List of input functions to be evaluated in reverse order</dd>
+                <dt class="return">Returns</dt>
+                <dd class="return">(any) => any</dd>
+                <dd class="return">Function that will apply the list of input functions in reverse order</dd>
+            </dl>
+        </code>
+        <br/>
+        The when() function allows you to conditionally execute based on some key value.
+        <code class="apidoc">
+            when( key: any, fct: () => any ): (any) => any
+            <dl>
+                <dt>key</dt>
+                <dd>(any) => any</dd>
+                <dd>Key value criteria to determine if the fct will be evaluated</dd>
+                <dt>fct</dt>
+                <dd>(any) => any</dd>
+                <dd>Conditionally evaluated function</dd>
+                <dt class="return">Returns</dt>
+                <dd class="return">(any) => any</dd>
+                <dd class="return">Function that will apply the fct if the input matches the key</dd>
+            </dl>
+        </code>
+
+        <article class="code-example">
+            <header>Pipe, compose, when</header>
+            <code><pre>
+                import { pipe, compose, when } from 'https://0x1f528.github.io/Trax/modules/trux.js'
+                console.log = (x) => {
+                    const body = document.getElementsByTagName("body")[0];
+                    const text = document.createTextNode(x);
+                    const br = document.createElement("br");
+                    body.appendChild(text);
+                    body.appendChild(br);
+                }
+                <example>
+                    let seq = pipe(
+                        (x) => x + 2,
+                        (x) => x * 2,
+                        (x) => x - 2
+                    );
+                    console.log( seq(4) );
+                    let seq2 = (x) => (((x + 2) * 2) - 2);
+                    console.log( seq2(4) );
+                    
+                    let rev = compose(
+                        (x) => x + 2,
+                        (x) => x * 2,
+                        (x) => x - 2
+                    );
+                    console.log( rev(4) );
+                    let rev2 = (x) => (((x - 2) * 2) + 2);
+                    console.log( rev2(4) );
+                    
+                    let choice = pipe(
+                        when('A', () => console.log( 'Say A' )),
+                        when('B', () => console.log( 'Say B' )),
+                        when('C', () => console.log( 'Say C' )),
+                    );
+                    choice('C');
+                    choice('A');
+                </example>
+            </pre></code>
+        </article>
+
+        <h5 id="companion_trux_reconcilearrays">reconcileArrays</h5>
+        <p>This method allows you to sync up a destination array to a source array in place. The two arrays don't have to contain the same type of data.</p>
+        <p>Existing destination array elements are moved within the array as needed, not destroyed and recreated</p>
+        <code class="apidoc">
+            reconcileArrays( source: Array&lt;S&gt;, destination: Array&lt;D&gt;, equals: (S,D) => boolean, generate: (S) => D ): void
+            <dl>
+                <dt>source</dt>
+                <dd>Array&lt;S&gt;</dd>
+                <dd>Input array whose elements must be matched by the destination</dd>
+                <dt>destination</dt>
+                <dd>Array&lt;T&gt;</dd>
+                <dd>Input/Output array whose elements will be rearranged to match the source array</dd>
+                <dt>equals</dt>
+                <dd>(S,D) => boolean</dd>
+                <dd>Returns true if the source element of type S matches destination element of type D</dd>
+                <dt>generate</dt>
+                <dd>(S) => D</dd>
+                <dd>Given an element of type S, create a new matching element of type D</dd>
+                <dt class="return">Returns</dt>
+                <dd class="return">void</dd>
+                <dd class="return"></dd>
+            </dl>
+        </code>
+
+        <article class="code-example">
+            <header>Array reconciliation</header>
+            <code><pre>
+                import { reconcileArrays } from 'https://0x1f528.github.io/Trax/modules/trux.js'
+                console.log = (x) => {
+                    const body = document.getElementsByTagName("body")[0];
+                    const text = document.createTextNode(x);
+                    const br = document.createElement("br");
+                    body.appendChild(text);
+                    body.appendChild(br);
+                }
+                <example>
+                    let sourceArray = [8,5,12,16];
+                    let destinationArray = [];
+                    // mapping 1 -> A, 2 -> B, 3 -> C, ...
+                    let createFromSourceValue = (s) => String.fromCharCode(64 + s);
+                    let testForEquality = (s,d) => (createFromSourceValue(s) === d);
+                    
+                    reconcileArrays(sourceArray, destinationArray, testForEquality, createFromSourceValue);
+                    
+                    console.log(destinationArray);
+                    sourceArray[3] = 12;
+                    sourceArray.push(15);
+                    
+                    reconcileArrays(sourceArray, destinationArray, testForEquality, createFromSourceValue);
+                    
+                    console.log(destinationArray);
+                </example>
+            </pre></code>
+        </article>
+
+        <h5 id="companion_trux_diffmapper">diffMapper</h5>
+        <p>The diffMapper function is one that you might actually find useful.</p>
+        <p>A feature omitted from <mark>Trax</mark> for performance reasons is the ability to know which of multiple publishers has fired/changed. 
+            You may want to implement different behavior depending on which publisher actually changed.</p>
+        <code class="apidoc">
+            diffMapper( source: Array&lt;S&gt;, destination: Array&lt;D&gt;, equals: (S,D) => boolean, generate: (S) => D ): void
+            <dl>
+                <dt>TODO: should diffMapper be fixed?</dt>
+            </dl>
+        </code>
+
+        <article class="code-example">
+            <header>Detecting which elements have changed</header>
+            <code><pre>
+                import { trax, Trax } from 'https://0x1f528.github.io/Trax/modules/trax.js'
+                import { diffMapper } from 'https://0x1f528.github.io/Trax/modules/trux.js'
+                console.log = (x) => {
+                    const body = document.getElementsByTagName("body")[0];
+                    const text = document.createTextNode(x);
+                    const br = document.createElement("br");
+                    body.appendChild(text);
+                    body.appendChild(br);
+                }
+                <example>
+                    let event = trax();
+                    let increment = trax(1);
+                    let current = trax(4)
+                        .onChange( (x) => console.log(x) );
+                    let incrementor = trax(event, increment, current, diffMapper())
+                        .fct( (e,i,c,d) => 
+                                d([i])[0] ? Trax.HALT :     // test if i has changed
+                                c + i )                     // increment
+                        .onChange( (x) => current(x) )      // set current to the new value
+                    event.fire();
+                    event.fire();
+                    increment(5);
+                    event.fire();
+                </example>
+            </pre></code>
+        </article>
+
+        <p>The diffMapper takes an array of values and returns a boolean array with true for all values that have changed since the last time diffMapper was called.
+            In the example above we only test on changes for i. If the increment has changed we don't want to increment or fire the onChange event. 
+            We don't bother testing the event value as the value is always the same; here we are interested in the event, not the value.</p>
+        <p>Try commenting out the "test if i has changed" code and run again. What happens now?</p>
+
+        <h5 id="companion_trux_prettyjson">prettyJSON</h5>
+        <p>This code snippet takes a JSON string and formats it into a more readable form.</p>
+        <code class="apidoc">
+            prettyJSON( jsonString: string): string
+            <dl>
+                <dt>jsonString</dt>
+                <dd>string</dd>
+                <dd>Valid JSON string</dd>
+                <dt class="return">Returns</dt>
+                <dd class="return">string</dd>
+                <dd class="return">Pretty printed JSON string equivalent to the input string</dd>
+            </dl>
+        </code>
+
+        <article class="code-example">
+            <header>JSON prettifier</header>
+            <code><pre>
+                import { prettyJSON } from 'https://0x1f528.github.io/Trax/modules/trux.js'
+                console.log = (x) => {
+                    const body = document.getElementsByTagName("body")[0];
+                    const text = document.createTextNode(x);
+                    const br = document.createElement("br");
+                    body.appendChild(text);
+                    body.appendChild(br);
+                }
+                <example>
+                    const body = document.getElementsByTagName("body")[0];
+                    const pre = document.createElement("pre");
+                    
+                    let json = '{"one":1,"two":2,"arr":[{"three":4,"four":{"five":5}},{"six":6}]}';
+                    let pretty = prettyJSON(json);
+                    pre.innerHTML = pretty;
+                    body.appendChild(pre);
+                </example>
+            </pre></code>
+        </article>
+
+        <p>This will be useful for some of the <mark>Trax</mark> troubleshooting APIs (pubs(), subs())</p>
+
+
+        <h2 id="trax_apis"> <mark>Trax</mark> APIs</h2>
+
+        <h5 id="trax_api_trax">trax( ...args )</h5>
+        Creates a new <mark>Trax</mark> instance
+        <code class="apidoc">
+            trax( ...args?: any[]): <mark>Trax</mark>
+            <dl>
+                <dt>...args?</dt>
+                <dd>any[]</dd>
+                <dd>Any number of publishers for this trax instance</dd>
+                <dt class="return">Returns</dt>
+                <dd class="return">Trax</dd>
+                <dd class="return">A <mark>Trax</mark> instance subscribed to the passed in publishers</dd>
+            </dl>
+        </code>
+
+        <h5 id="trax_api_trax_configure">( ...args )</h5>
+        Calling the <mark>Trax</mark> instance (a function) with arguments. Subscribes a <mark>Trax</mark> instance to the passed in publishers; replaces any previous subscribed values.
+        <code class="apidoc">
+            ( ...args: any[]): <mark>Trax</mark>
+            <dl>
+                <dt>...args</dt>
+                <dd>any[]</dd>
+                <dd>Any number of publishers for this trax instance</dd>
+                <dt class="return">Returns</dt>
+                <dd class="return">Trax</dd>
+                <dd class="return">This <mark>Trax</mark> instance now subscribed to a new list of publishers (fluent interface)</dd>
+            </dl>
+        </code>
+
+        <h5 id="trax_api_trax_value">(&nbsp;)</h5>
+        Calling the <mark>Trax</mark> instance (a function) with no arguments. Returns the current <mark>Trax</mark> value.
+        <code class="apidoc">
+            (): <mark>Trax</mark>
+            <dl>
+                <dt></dt>
+                <dd></dd>
+                <dd>No arguments</dd>
+                <dt class="return">Returns</dt>
+                <dd class="return">Trax</dd>
+                <dd class="return">Returns the value of the <mark>Trax</mark> instance</dd>
+            </dl>
+        </code>
+
+        <h5 id="trax_api_fct">fct( callback )</h5>
+        Assign a transform function to the <mark>Trax</mark> instance.
+        <code class="apidoc">
+            fct( transformation: (...args: any[], value?: T, this?: <mark>Trax</mark>&lt;T&gt;) => T ): <mark>Trax</mark>&lt;T&gt;
+            <dl>
+                <dt>transformation</dt>
+                <dd>(...args: any[], value?: T, this?: <mark>Trax</mark>&lt;T&gt;) => T</dd>
+                <dd>Transformation function (see below)</dd>
+                <dt class="return">Returns</dt>
+                <dd class="return">Trax&lt;T&gt;</dd>
+                <dd class="return">Returns the <mark>Trax</mark> instance (fluent interface)</dd>
+            </dl>
+        </code>
+
+        <h5 id="trax_api_fct_syntax">fct callback function</h5>
+        Syntax of the transformation callback function to be assigned to the <mark>Trax</mark> instance. This function will determine the value of this <mark>Trax</mark> instance given the current publisher values.
+        <code class="apidoc">
+            (...args: any[], value?: T, this?: <mark>Trax</mark>&lt;T&gt;) => T
+            <dl>
+                <dt>...args</dt>
+                <dd>any[]</dd>
+                <dd>List of the values of each of the publishers in order of the <mark>Trax</mark> publishers declaration</dd>
+                <dt>value?</dt>
+                <dd>T</dd>
+                <dd>The current value of the <mark>Trax</mark> instance; optional as the callback function may choose not to use this</dd>
+                <dt>this?</dt>
+                <dd>Trax&lt;T&gt</dd>
+                <dd>The <mark>Trax</mark> instance itself; optional as the callback function may choose not to use this</dd>
+                <dt class="return">Returns</dt>
+                <dd class="return">T</dd>
+                <dd class="return">Returns the new value for this <mark>Trax</mark> instance; if <mark>Trax</mark>.HALT returned event propagation will be halted and <mark>Trax</mark> value will not be updated</dd>
+            </dl>
+        </code>
+
+        <h5 id="trax_api_onchange">onChange( callback )</h5>
+        Set the onChange configuration to the <mark>Trax</mark> instance.
+        <code class="apidoc">
+            onChange( configuration: boolean | (value: T, this?: <mark>Trax</mark>&lt;T&gt) => void ): <mark>Trax</mark>&lt;T&gt;
+            <dl>
+                <dt>configuration</dt>
+                <dd>boolean | (value: T, this?: <mark>Trax</mark>&lt;T&gt) => void</dd>
+                <dd>If boolean value passed in will be live or not depending on the value. Otherwise will be live and use the onChange function as described below</dd>
+                <dt class="return">Returns</dt>
+                <dd class="return">Trax&lt;T&gt;</dd>
+                <dd class="return">Returns the <mark>Trax</mark> instance (fluent interface)</dd>
+            </dl>
+        </code>
+
+        <h5 id="trax_api_onchange_syntax">onChange callback function</h5>
+        Syntax of the onChange callback function. This function will handle any required side-effects.
+        <code class="apidoc">
+            (value: T, this?: <mark>Trax</mark>&lt;T&gt) => void
+            <dl>
+                <dt>value</dt>
+                <dd>T</dd>
+                <dd>The current <mark>Trax</mark> value after any updates</dd>
+                <dt>this?</dt>
+                <dd>Trax&lt;T&gt</dd>
+                <dd>The <mark>Trax</mark> instance itself; optional as the callback function may choose not to use this</dd>
+                <dt class="return">Returns</dt>
+                <dd class="return">void</dd>
+                <dd class="return">Return value not used by <mark>Trax</mark></dd>
+            </dl>
+        </code>
+
+        <h5 id="trax_api_fire">fire( name?, arg? )</h5>
+        Generate an event that will propagate to any Live subscribers.
+        <code class="apidoc">
+            fire( name?: string | symbol, arg?: any ): <mark>Trax</mark>&lt;T&gt;
+            <dl>
+                <dt>name?</dt>
+                <dd>string | symbol</dd>
+                <dd>Name of the event; if omitted will be the standard Update event, custom event otherwise</dd>
+                <dt>arg?</dt>
+                <dd>any</dd>
+                <dd>Optional argument that will be passed to the event handlers; omitted for the standard Update event</dd>
+                <dt class="return">Returns</dt>
+                <dd class="return">Trax&lt;T&gt;</dd>
+                <dd class="return">Returns the <mark>Trax</mark> instance (fluent interface)</dd>
+            </dl>
+        </code>
+
+        <h5 id="trax_api_handler">handler( name, callback )</h5>
+        Function to handle any publisher custom events
+        <code class="apidoc">
+            handler( name: string | symbol,  action? : (value: T, arg?: any, this?: <mark>Trax</mark>&lt;T&gt) => V ): <mark>Trax</mark>&lt;T&gt;
+            <dl>
+                <dt>name</dt>
+                <dd>string | symbol</dd>
+                <dd>Name of the custom event</dd>
+                <dt>action?</dt>
+                <dd>(value: T, arg?: any, <mark>Trax</mark>&lt;T&gt) => V</dd>
+                <dd>Event handler; described below</dd>
+                <dt class="return">Returns</dt>
+                <dd class="return">Trax&lt;T&gt;</dd>
+                <dd class="return">Returns the <mark>Trax</mark> instance (fluent interface)</dd>
+            </dl>
+        </code>
+
+        <h5 id="trax_api_handler_syntax">event handler callback function</h5>
+        Callback function to handle custom events.
+        <code class="apidoc">
+            (value: T, arg?: any, this?: <mark>Trax</mark>&lt;T&gt) => V 
+            <dl>
+                <dt>value</dt>
+                <dd>T</dd>
+                <dd>Current value of the <mark>Trax</mark> instance</dd>
+                <dt>arg?</dt>
+                <dd>any</dd>
+                <dd>Event argument passed up from the triggered publisher; optional as the callback function may choose not to use this</dd>
+                <dt>this?</dt>
+                <dd>Trax&lt;T&gt</dd>
+                <dd>The <mark>Trax</mark> instance; optional as the callback function may choose not to use this</dd>
+                <dt class="return">Returns</dt>
+                <dd class="return">V</dd>
+                <dd class="return">Event argument that will be passed to any live subscribers; if <mark>Trax</mark>.HALT returned event propagation will be halted</dd>
+            </dl>
+        </code>
+
+        <h5 id="trax_api_deregister">deregister( recursive )</h5>
+        Deregister/unhook this <mark>Trax</mark> instance from all publishers. This would be used during decommissioning of a node to avoid memory leaks.
+        <code class="apidoc">
+            deregister( recursive?: boolean ): <mark>Trax</mark>&lt;T&gt;
+            <dl>
+                <dt>recursive?</dt>
+                <dd>boolean</dd>
+                <dd>If set to true any orphaned publishers (no subscribers) will also be deregistered</dd>
+                <dt class="return">Returns</dt>
+                <dd class="return">Trax&lt;T&gt;</dd>
+                <dd class="return">Returns the <mark>Trax</mark> instance (fluent interface)</dd>
+            </dl>
+        </code>
+
+        <h5 id="trax_api_prune">prune( )</h5>
+        Similar to deregister(), prune will recursively deregister from any publishers AND recursively unhook any subscribers.
+        <code class="apidoc">
+            prune( ): <mark>Trax</mark>&lt;T&gt;
+            <dl>
+                <dt class="return">Returns</dt>
+                <dd class="return">Trax&lt;T&gt;</dd>
+                <dd class="return">Returns the <mark>Trax</mark> instance (fluent interface)</dd>
+            </dl>
+        </code>
+
+        <h5 id="trax_api_id">id( name )</h5>
+        Provide the trax instance with an id/name. This can be helpful when debugging/troubleshooting and is required for the logging APIs.
+        <code class="apidoc">
+            id( name?: string ): <mark>Trax</mark>&lt;T&gt; | string
+            <dl>
+                <dt>name?</dt>
+                <dd>string</dd>
+                <dd>Name to set on this <mark>Trax</mark> instance; if the optional parameter is omitted will return the current name</dd>
+                <dt class="return">Returns</dt>
+                <dd class="return">Trax&lt;T&gt; | string</dd>
+                <dd class="return">Returns the <mark>Trax</mark> instance (fluent interface) OR the current id if name? parameter was omitted</dd>
+            </dl>
+        </code>
+
+        <h5 id="trax_api_log">log( callback )</h5>
+        Configure a logging function on this <mark>Trax</mark> instance. Will log change events.
+        <code class="apidoc">
+            log( logger: false | (id: string, from: string, to: string) => string ): <mark>Trax</mark>&lt;T&gt;
+            <dl>
+                <dt>logger</dt>
+                <dd>false | (id: string, from: string, to: string) => string</dd>
+                <dd>false to turn off, or logging callback function</dd>
+                <dt class="return">Returns</dt>
+                <dd class="return">string</dd>
+                <dd class="return">Returns the <mark>Trax</mark> instance (fluent interface)</dd>
+            </dl>
+        </code>
+
+        <h5 id="trax_api_static_log">Trax.log( callback )</h5>
+        Configure a global logging function for all <mark>Trax</mark> instances (unless overridden by the above). Will log change events.
+        <code class="apidoc">
+            log( logger: (id: string, from: string, to: string) => string ): void
+            <dl>
+                <dt>logger</dt>
+                <dd>false | (id: string, from: string, to: string) => string</dd>
+                <dd>false to turn off, or logging callback function</dd>
+                <dt class="return">Returns</dt>
+                <dd class="return">void</dd>
+                <dd class="return">No return value</dd>
+            </dl>
+        </code>
+
+        <h5 id="trax_api_logger_syntax">logger callback function</h5>
+        Syntax of logger callback function
+        <code class="apidoc">
+            (id: string, from: string, to: string) => string
+            <dl>
+                <dt>id</dt>
+                <dd>string</dd>
+                <dd>Name of <mark>Trax</mark> node being updated</dd>
+                <dt>from</dt>
+                <dd>string</dd>
+                <dd>Previous value of <mark>Trax</mark> node</dd>
+                <dt>to</dt>
+                <dd>string</dd>
+                <dd>New (and current) value of <mark>Trax</mark> node</dd>
+                <dt class="return">Returns</dt>
+                <dd class="return">string</dd>
+                <dd class="return">New (and current) value of <mark>Trax</mark> node</dd>
+            </dl>
+        </code>
+
+        <h5 id="trax_api_pubs">pubs( levels )</h5>
+        For troubleshooting: returns a recursive JSON string of the publisher nodes of this instance
+        <code class="apidoc">
+            pubs( levels?: number ): string
+            <dl>
+                <dt>levels?</dt>
+                <dd>number</dd>
+                <dd>How many levels deep to recurse on the publisher chain; if omitted will recurse the full depth</dd>
+                <dt class="return">Returns</dt>
+                <dd class="return">string</dd>
+                <dd class="return">Returns a JSON string of all publishers levels deep</dd>
+            </dl>
+        </code>
+
+        <h5 id="trax_api_subs">subs( levels )</h5>
+        For troubleshooting: returns a recursive JSON string of the subscriber nodes of this instance
+        <code class="apidoc">
+            subs( levels?: number ): string
+            <dl>
+                <dt>levels?</dt>
+                <dd>number</dd>
+                <dd>How many levels deep to recurse on the subscriber chain; if omitted will recurse the full depth</dd>
+                <dt class="return">Returns</dt>
+                <dd class="return">string</dd>
+                <dd class="return">Returns a JSON string of all subscribers levels deep</dd>
+            </dl>
+        </code>
+
+        <h5 id="trax_api_static_onchange">Trax.onChange( mode )</h5>
+        Globally set the onChange behavior to synchronous or asynchronous
+        <code class="apidoc">
+            Trax.onChange( mode: &lt;Trax.MODE&gt; ): void
+            <dl>
+                <dt>mode</dt>
+                <dd>&lt;Trax.MODE&gt;</dd>
+                <dd>Trax.MODE.SYNC or Trax.MODE.ASYNC: SYNC triggers onChange events inline; ASYNC batches onChange events until the next available JS event loop</dd>
+                <dt class="return">Returns</dt>
+                <dd class="return">void</dd>
+                <dd class="return"></dd>
+            </dl>
+        </code>
+
+
+        <h2 id="algorithm">Algorithmic approach</h2>
+        <p>While <mark>Trax</mark> behaves like updates are propagated right then and there this is not actually what happens under the hood. 
+            To optimize performance <mark>Trax</mark> only propagates change events when necessary to maintain the illusion of immediacy.</p>
+        <h4 id="algorithm_deferred">Deferred propagation</h4>
+        <article class="figure">
+            <figure>
+                <img src="resources/Algo1.png">
+                <figcaption>A Pub / Sub hierarchy of elements</figcaption>
+            </figure>
+            <div>
+                <p> <mark>Trax</mark> nodes maintain a cache of their value. The cache can be in an invalidated state or valid state.</p>
+                <p>In general, requesting an element's value will trigger a recursive traversal down the dependency tree.
+                    If the cached value is <em>valid</em>, that value will be used as the element's value. 
+                    Otherwise the immediate publishers will be queried for their values and will be used to derive the current element's value and cached in turn.
+                </p>
+                <p>For <em>Live</em> <mark>Trax</mark> nodes we except them to react immediately to upstream changes. In this case propagation cannot be deferred.</p>
+            </div>
+        </article>
+
+        <h4 id="algorithm_propagation">Change propagation for <em>Live</em> elements</h4>
+        <article class="figure">
+            <figure>
+                <img src="resources/Algo2.png">
+                <figcaption>Change propagation</figcaption>
+            </figure>
+            <div>
+                <p>When a publisher is updated with a new value...</p>
+                <ul>
+                    <li>As a first step, subscriber element caches are recursively invalidated</li>
+                    <li>If the cache is already invalidated we know that there is no <em>Live</em> element down that branch and all subscriber caches will already be invalidated</li>
+                    <li>Conversely, if a cache is valid we either have a <em>Live</em> node down that branch, or we recently queried an element - either way all dependent element caches will be invalidated</li>
+                    <li>When we come across a <em>Live</em> element, a reference to that element will be put aside for subsequent processing</li>
+                </ul>
+            </div>
+        </article>
+
+        <h4 id="algorithm_recalculate">Recalculating the value of <em>Live</em> elements</h4>
+        <article class="figure">
+            <figure>
+                <img src="resources/Algo3.png">
+                <figcaption><em>Live</em> element refresh</figcaption>
+            </figure>
+            <div>
+                <p>For all <em>Live</em> element references that were put aside we recalculate their value.</p>
+                <ul>
+                    <li>Just like for a query, we recursively traverse the element's publishers and use their values to derive this element's value</li>
+                    <li>When a publisher has a valid cached value, we can use that</li> 
+                    <li>Otherwise we continue the recursion</li>
+                </ul>
+                <p>The handling of the <em>Live</em> element references can either be done synchronously or asynchronously.</p>
+                <ul>
+                    <li>In the case of synchronous handling the <em>Live</em> node refresh is done right away after the cache invalidation step completes</li>
+                    <li>For asynchronous handling the refresh logic is deferred until the next Javascript event loop</li>
+                    <li>By deferring the refresh logic any other updates driven by the main program logic are batched and will be handled together - this can avoid the cost of redundant updates to the same branch</li>
+                </ul>
+            </div>
+        </article>
+
+        <h4 id="algorithm_onchange"><em>Live</em> elements onChange triggered</h4>
+        <article class="figure">
+            <figure>
+                <img src="resources/Algo4.png">
+                <figcaption>Emitting the <em>Live</em> update</figcaption>
+            </figure>
+            <div>
+                <p>As the final step, the updated <em>Live</em> elements will emit their new value by calling the onChange function.</p>
+                <ul>
+                    <li>The onChange function works by side-effect to accomplish the desired external behavior</li>
+                    <li>Note that the fct()s along the change notification branch are also fired to recalculate the nodes values - fct()s may also implement side-effects if desired</li>
+                </ul>
+            </div>
+        </article>
+
+        <h2 id="Acknowledgements">Acknowledgements</h2>
+        <p>(&ddagger;) The code editor is provided by <a href="https://github.com/kazzkiq/CodeFlask">CodeFlask</a>. The accompanying REPL was built using Trix and Trax.</p>
+        <p>A special shout out to <a href="https://github.com/paldepind/flyd">Flyd</a> for providing me with the inspiration to start this journey so many years ago.</p>
+
+
+        <div style="height:20em;"></div>
+
+
+    <!-- -->
+        <article class="code-example">
+            <header>Second JS Code</header>
+            <code><pre>
+                import { trax, Trax } from 'https://0x1f528.github.io/Trax/modules/trax.js'
+                import { trix } from 'https://0x1f528.github.io/Trix/modules/trix.js'
+                const {H1, P, DIV, SPAN, EM} = trix();
+                trix(document.getElementsByTagName('app')[0]).trix(
+                <example>
+                        H1("Hello there!"),
+                        P(`Lorem ipsum dolor sit amet, consectetur adipiscing elit. 
+                           Mauris iaculis, sapien sed interdum tincidunt, 
+                           massa libero pretium nibh, eu egestas velit elit sit amet leo.`),
+                        DIV ( 
+                                { 
+                                    style: 'width:10em;height:5em;'
+                                }, 
+                                SPAN(
+                                    "Proin ",
+                                    EM({ style:'color:red'}, "non ligula"),
+                                    " quis urna egestas imperdiet a non dui."
+                                )
+                            )
+                </example>
+                );
+            </pre></code>
+        </article>
+    <!-- -->
+
+        <script type="module" >
+            import { createRepl } from 'https://0x1f528.github.io/Trix/utils/JSRepl/jsrepl.js'
+
+            let examples = document.getElementsByClassName('code-example');
+            for (let example of examples) {
+                createRepl(example);
+            }            
+        </script>
+        
+    </body>
+</html>
