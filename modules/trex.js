@@ -29,3 +29,19 @@ export var INC = (trigger, initial, increment=1, modulo = Number.MAX_VALUE) => {
                                                                         // create a trax node that increments an initial value every time the trigger element changes (or is fired)
     return trax(trigger,increment).fct((x,inc,current) => ((current ?? initial) + inc) % modulo );
 }
+export var TOGGLE = (initial) => {
+    return trax(initial).fct( (i, v = initial) => !v );                 // Toggle the result true <=> false every time this instance fires.
+}
+export var XHR = (url, traxNode, req) => {                              // Make a XMLHttpRequest to url and put the response into traxNode
+    req ??= new XMLHttpRequest();
+    req.responseType = "text";
+
+    return trax(url).fct( (u) => {
+        if (!u) return;
+        req.onload = (e) => {
+            traxNode(req.response);
+        };
+        req.open("GET", u);
+        req.send();
+    }).onChange(true);
+}

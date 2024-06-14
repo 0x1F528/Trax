@@ -2,15 +2,18 @@
   "name": "@0x1f528/trax",
   "version": "1.0.0",
   "description": "Simple reactive pub/sub",
-  "main": "trax.js",
+  "main": "modules/trax.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/0x1F528/Trax.git"
   },
   "type": "module",
   "scripts": {
-    "test": "node tests.js"
+    "test": "node tests/tests.js"
   },
   "author": "Chris Bachmann",
-  "license": "Unlicense"
+  "license": "Unlicense",
+  "dependencies": {
+    "codeflask": "^1.4.1"
+  }
 }
