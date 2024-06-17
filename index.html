@@ -31,7 +31,7 @@
                 <li>Zero dependency</li>
             </ul>
         </p>
-        <p><mark>Trax</mark> is a companion module of <mark>Trix</mark>, a reactive UI framework. <mark>Trax</mark> can be used by itself or together with <mark>Trix</mark>.</p>
+        <p><mark>Trax</mark> is a companion module of <a href="https://github.com/0x1F528/Trix"><mark>Trix</mark></a>, a reactive UI framework. <mark>Trax</mark> can be used by itself or together with <a href="https://github.com/0x1F528/Trix"><mark>Trix</mark></a>.</p>
 
         <h2>Table of contents</h2>
         <ol class="important">
@@ -40,6 +40,7 @@
                     <li><a href="#overview_pub_sub_hierarchy">Publisher / Subscriber hierarchy</a></li>
                     <li><a href="#overview_pub_sub_change_propagation">Publisher / Subscriber change propagation</a></li>
                     <li><a href="#overview_usage">Usage</a></li>
+                    <li><a href="#overview_code">Source Code</a></li>
                 </ol>
             </li>
             <li><a href="#tutorial">Tutorial</a>
@@ -179,6 +180,9 @@
         </p>
         <p>Define a transformation/aggregation function using t.fct( transformFct ) with t being a <mark>trax</mark> element and transformFct being the transformation/aggregation taking the list of publisher values.</p>
         <p>The t.onChange( effectFct ) method will make the <mark>trax</mark> element <em>Live</em> and will call the effectFct to perform the desired side effects when publishers notify for updates.</p>
+
+        <h4 id="overview_code">Source code</h4>
+        <p>The source code is available in github under <a href="https://github.com/0x1F528/Trax">https://github.com/0x1F528/Trax</a></p>
 
         <h2 id="tutorial">Tutorial</h2>
         <p><mark>Trax</mark> works by declaratively creating and wiring up <mark>Trax</mark> nodes in a pub/sub dependency graph. 
@@ -1619,41 +1623,12 @@
         </article>
 
         <h2 id="Acknowledgements">Acknowledgements</h2>
-        <p>(&ddagger;) The code editor is provided by <a href="https://github.com/kazzkiq/CodeFlask">CodeFlask</a>. The accompanying REPL was built using Trix and Trax.</p>
+        <p>(&ddagger;) The code editor is provided by <a href="https://github.com/kazzkiq/CodeFlask">CodeFlask</a>. The accompanying REPL was built using <a href="https://github.com/0x1F528/Trix"><mark>Trix</mark></a> and <mark>Trax</mark>.</p>
         <p>A special shout out to <a href="https://github.com/paldepind/flyd">Flyd</a> for providing me with the inspiration to start this journey so many years ago.</p>
 
 
         <div style="height:20em;"></div>
 
-
-    <!-- -->
-        <article class="code-example">
-            <header>Second JS Code</header>
-            <code><pre>
-                import { trax, Trax } from 'https://0x1f528.github.io/Trax/modules/trax.js'
-                import { trix } from 'https://0x1f528.github.io/Trix/modules/trix.js'
-                const {H1, P, DIV, SPAN, EM} = trix();
-                trix(document.getElementsByTagName('app')[0]).trix(
-                <example>
-                        H1("Hello there!"),
-                        P(`Lorem ipsum dolor sit amet, consectetur adipiscing elit. 
-                           Mauris iaculis, sapien sed interdum tincidunt, 
-                           massa libero pretium nibh, eu egestas velit elit sit amet leo.`),
-                        DIV ( 
-                                { 
-                                    style: 'width:10em;height:5em;'
-                                }, 
-                                SPAN(
-                                    "Proin ",
-                                    EM({ style:'color:red'}, "non ligula"),
-                                    " quis urna egestas imperdiet a non dui."
-                                )
-                            )
-                </example>
-                );
-            </pre></code>
-        </article>
-    <!-- -->
 
         <script type="module" >
             import { createRepl } from 'https://0x1f528.github.io/Trix/utils/JSRepl/jsrepl.js'

@@ -14,7 +14,7 @@ Trax is a minimal reactive pub/sub solution in JavaScript that emphasizes explic
 
 ```javascript
 // Example usage of Trax
-import { trax, Trax } from './trax.js'
+import { trax, Trax } from 'https://0x1f528.github.io/Trax/modules/trax.js'
 
 // Create a new Trax instance
 var a = trax('original value');
